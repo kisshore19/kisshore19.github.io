@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Lens — Online JSON Formatter & Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════ THEMES ══════════════════════ */
+:root,[data-theme="dark"]{
+  --bg:#0d0f12;--surface:#13161b;--surface2:#1a1e26;
+  --border:#252a35;--border2:#2e3545;
+  --text:#e2e8f0;--text-muted:#64748b;--text-dim:#94a3b8;
+  --accent:#38bdf8;--accent2:#818cf8;
+  --green:#4ade80;--red:#f87171;
+  --key-color:#93c5fd;--string-color:#86efac;
+  --number-color:#fca5a5;--bool-color:#c4b5fd;--null-color:#64748b;
+  --table-stripe:rgba(255,255,255,.025);--table-hover:rgba(56,189,248,.06);
+  --th-bg:#13161b;--th-hover:#1a1e26;
+}
+[data-theme="light"]{
+  --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;
+  --border:#e2e8f0;--border2:#cbd5e1;
+  --text:#0f172a;--text-muted:#94a3b8;--text-dim:#64748b;
+  --accent:#0284c7;--accent2:#6366f1;
+  --green:#16a34a;--red:#dc2626;
+  --key-color:#1d4ed8;--string-color:#15803d;
+  --number-color:#b45309;--bool-color:#7c3aed;--null-color:#94a3b8;
+  --table-stripe:rgba(0,0,0,.025);--table-hover:rgba(2,132,199,.06);
+  --th-bg:#ffffff;--th-hover:#f1f5f9;
+}
+[data-theme="midnight"]{
+  --bg:#080c18;--surface:#0d1426;--surface2:#111d35;
+  --border:#1a2a4a;--border2:#243656;
+  --text:#c8d8f0;--text-muted:#4a6080;--text-dim:#6a88b0;
+  --accent:#60a5fa;--accent2:#a78bfa;
+  --green:#34d399;--red:#fb7185;
+  --key-color:#7dd3fc;--string-color:#6ee7b7;
+  --number-color:#fcd34d;--bool-color:#c4b5fd;--null-color:#4a6080;
+  --table-stripe:rgba(255,255,255,.02);--table-hover:rgba(96,165,250,.07);
+  --th-bg:#0d1426;--th-hover:#111d35;
+}
+[data-theme="forest"]{
+  --bg:#0a0f0a;--surface:#0f1a0f;--surface2:#142014;
+  --border:#1e301e;--border2:#283c28;
+  --text:#d4e8d0;--text-muted:#4a6a48;--text-dim:#6a8c68;
+  --accent:#4ade80;--accent2:#a3e635;
+  --green:#86efac;--red:#f87171;
+  --key-color:#86efac;--string-color:#bef264;
+  --number-color:#fbbf24;--bool-color:#34d399;--null-color:#4a6a48;
+  --table-stripe:rgba(255,255,255,.02);--table-hover:rgba(74,222,128,.07);
+  --th-bg:#0f1a0f;--th-hover:#142014;
+}
+[data-theme="solarized"]{
+  --bg:#002b36;--surface:#073642;--surface2:#0a3d4a;
+  --border:#124652;--border2:#1a5060;
+  --text:#839496;--text-muted:#586e75;--text-dim:#657b83;
+  --accent:#268bd2;--accent2:#6c71c4;
+  --green:#859900;--red:#dc322f;
+  --key-color:#268bd2;--string-color:#2aa198;
+  --number-color:#d33682;--bool-color:#6c71c4;--null-color:#586e75;
+  --table-stripe:rgba(255,255,255,.02);--table-hover:rgba(38,139,210,.07);
+  --th-bg:#073642;--th-hover:#0a3d4a;
+}
+
+/* ══════════════════════ BASE ══════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:background .25s,color .25s;}
+
+/* ── Header ── */
+header{padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:200;transition:background .25s,border-color .25s;}
+.logo{display:flex;align-items:center;gap:10px;color:var(--text);flex-shrink:0;}
+.logo-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000;font-family:'JetBrains Mono',monospace;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:background .25s;}
+.logo-text{font-size:18px;font-weight:800;letter-spacing:-.5px;}
+.logo-text span{color:var(--accent);transition:color .25s;}
+nav{display:flex;gap:4px;}
+.tab-btn{padding:7px 14px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.tab-btn:hover{color:var(--text);background:var(--surface2);}
+.tab-btn.active{color:var(--accent);background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.2);}
+.tab-btn .tab-badge{display:inline-block;background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:5px;vertical-align:middle;}
+
+/* theme switcher */
+.theme-switcher{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;transition:background .25s,border-color .25s;}
+.theme-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+.swatch{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s,box-shadow .15s;position:relative;flex-shrink:0;}
+.swatch:hover{transform:scale(1.2);}
+.swatch.active{border-color:var(--text);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--text-muted);}
+.swatch[data-t="dark"]{background:#38bdf8;}
+.swatch[data-t="light"]{background:linear-gradient(135deg,#f8fafc,#0284c7);border:2px solid #cbd5e1;}
+.swatch[data-t="midnight"]{background:linear-gradient(135deg,#1e3a6e,#60a5fa);}
+.swatch[data-t="forest"]{background:linear-gradient(135deg,#166534,#4ade80);}
+.swatch[data-t="solarized"]{background:linear-gradient(135deg,#002b36,#268bd2);}
+.swatch::after{content:attr(data-label);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface);color:var(--text);border:1px solid var(--border2);font-size:11px;font-family:'Syne',sans-serif;font-weight:600;white-space:nowrap;padding:3px 8px;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .15s;}
+.swatch:hover::after{opacity:1;}
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+
+/* ── Layout ── */
+.workspace{flex:1;display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 57px);}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;transition:border-color .25s;}
+.panel:last-child{border-right:none;}
+
+/* ── Panel header ── */
+.panel-header{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;transition:background .25s,border-color .25s;}
+.panel-title{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;}
+.panel-actions{display:flex;gap:6px;align-items:center;}
+.btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text-dim);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:hover{color:var(--text);border-color:var(--accent);}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{opacity:.88;}
+.btn.danger:hover{border-color:var(--red);color:var(--red);}
+
+/* ── Input ── */
+.input-area{flex:1;overflow:hidden;}
+#json-input{width:100%;height:100%;padding:16px;background:var(--bg);color:var(--text);border:none;outline:none;resize:none;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;tab-size:2;transition:background .25s,color .25s;}
+#json-input::placeholder{color:var(--text-muted);}
+
+/* ── Status bar ── */
+.status-bar{padding:6px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);flex-shrink:0;transition:background .25s;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);flex-shrink:0;}
+.status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+.status-dot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
+
+/* ── Right panel ── */
+.viewer-panel{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);transition:background .25s;}
+.viewer-controls{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;transition:background .25s;}
+.search-wrap{flex:1;position:relative;}
+.search-wrap input{width:100%;padding:6px 32px 6px 30px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:border-color .15s,background .25s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--text-muted);}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px;pointer-events:none;}
+.search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;cursor:pointer;line-height:1;display:none;}
+.search-clear:hover{color:var(--text);}
+
+/* ── Tree ── */
+#tree-container{flex:1;overflow:auto;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;}
+.tree-node{position:relative;}
+.node-row{display:flex;align-items:flex-start;gap:4px;border-radius:4px;padding:1px 4px;margin:0 -4px;transition:background .1s;}
+.node-row:hover{background:rgba(128,128,128,.08);}
+.toggle-btn{cursor:pointer;color:var(--text-muted);user-select:none;flex-shrink:0;width:16px;text-align:center;font-size:10px;transition:transform .15s;margin-top:3px;}
+.toggle-btn.collapsed{transform:rotate(-90deg);}
+.spacer{width:16px;flex-shrink:0;}
+.key{color:var(--key-color);transition:color .25s;}
+.colon{color:var(--text-muted);margin:0 4px;}
+.bracket{color:var(--text-dim);}
+.string{color:var(--string-color);transition:color .25s;}
+.number{color:var(--number-color);transition:color .25s;}
+.boolean{color:var(--bool-color);transition:color .25s;}
+.null-val{color:var(--null-color);font-style:italic;}
+.count{color:var(--text-muted);font-size:11px;margin-left:4px;}
+.children{margin-left:20px;border-left:1px solid var(--border2);padding-left:4px;margin-top:1px;transition:border-color .25s;}
+.children.hidden{display:none;}
+
+/* ══════════════════════ TABLE VIEW ══════════════════════ */
+#table-panel{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.table-wrap{flex:1;overflow:auto;}
+
+table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+thead{position:sticky;top:0;z-index:10;}
+
+/* ── Column header with hide button ── */
+thead th{
+  background:var(--th-bg);border-bottom:2px solid var(--border2);
+  border-right:1px solid var(--border);padding:0;
+  text-align:left;white-space:nowrap;user-select:none;
+  transition:background .15s;
+}
+thead th:last-child{border-right:none;}
+thead th.hidden-col{display:none;}
+
+.th-inner{
+  display:flex;align-items:stretch;gap:0;
+}
+.th-label{
+  flex:1;padding:10px 12px;cursor:pointer;font-weight:700;
+  color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+  transition:color .15s;display:flex;align-items:center;gap:5px;
+}
+.th-label:hover{color:var(--accent);}
+.sort-icon{font-size:10px;opacity:.4;}
+thead th.sort-asc  .sort-icon,
+thead th.sort-desc .sort-icon{opacity:1;color:var(--accent);}
+
+/* hide-column button */
+.th-hide{
+  display:flex;align-items:center;justify-content:center;
+  width:0;overflow:hidden;opacity:0;
+  cursor:pointer;color:var(--text-muted);font-size:13px;
+  border-left:1px solid transparent;
+  transition:width .15s,opacity .15s,background .15s,border-color .15s;
+}
+thead th:hover .th-hide{width:26px;opacity:1;border-color:var(--border2);}
+.th-hide:hover{background:rgba(248,113,113,.15);color:var(--red);}
+
+/* ── Show-columns dropdown ── */
+.col-manager{position:relative;}
+.col-manager-btn{display:flex;align-items:center;gap:5px;}
+.col-dropdown{
+  display:none;position:absolute;right:0;top:calc(100% + 6px);
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  min-width:200px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.35);
+  padding:6px;max-height:320px;overflow-y:auto;
+}
+.col-dropdown.open{display:block;}
+.col-dropdown-header{padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.col-dropdown-header a{color:var(--accent);cursor:pointer;font-size:11px;font-weight:600;text-decoration:none;}
+.col-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;transition:background .1s;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
+.col-item:hover{background:var(--surface2);}
+.col-item input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex-shrink:0;}
+.col-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.col-item .col-vis-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.col-item.hidden-item .col-vis-dot{background:var(--text-muted);}
+
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:nth-child(even){background:var(--table-stripe);}
+tbody tr:hover{background:var(--table-hover);}
+tbody td{padding:9px 14px;vertical-align:top;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-right:1px solid var(--border);color:var(--text-dim);}
+tbody td:last-child{border-right:none;}
+tbody td.hidden-col{display:none;}
+td.td-string{color:var(--string-color);}
+td.td-number{color:var(--number-color);}
+td.td-boolean{color:var(--bool-color);}
+td.td-null{color:var(--null-color);font-style:italic;}
+td.td-object{color:var(--text-muted);font-style:italic;}
+td.col-rownum{color:var(--text-muted);font-size:11px;width:1%;white-space:nowrap;}
+
+/* table footer */
+.table-footer{padding:7px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;flex-shrink:0;transition:background .25s;}
+
+/* ── Search results ── */
+#search-results{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.result-meta{padding:8px 16px 4px;flex-shrink:0;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:space-between;}
+#search-results-inner{flex:1;overflow:auto;padding:4px 16px 16px;}
+.result-card{background:var(--surface);border:1px solid var(--border2);border-radius:8px;margin-bottom:10px;overflow:hidden;transition:border-color .15s;}
+.result-card:hover{border-color:var(--accent);}
+.result-card-header{padding:7px 12px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;}
+.path-seg{color:var(--text-dim);font-size:11px;}
+.path-sep{color:var(--text-muted);font-size:11px;margin:0 2px;}
+.path-match{color:var(--accent);font-weight:700;font-size:11px;}
+.result-card-body{padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;}
+.result-key{color:var(--key-color);}
+.result-colon{color:var(--text-muted);margin:0 5px;}
+.result-card-body .tree-node{animation:none;}
+.no-results{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;color:var(--text-muted);text-align:center;}
+.no-results-icon{font-size:36px;opacity:.3;}
+.no-results p{font-size:13px;}
+
+/* ── Misc ── */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text-muted);padding:40px;text-align:center;}
+.empty-icon{font-size:48px;opacity:.3;}
+.empty-state p{font-size:14px;line-height:1.6;max-width:280px;}
+.error-msg{padding:16px;color:var(--red);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;flex-direction:column;gap:8px;}
+.error-title{font-weight:700;}
+#file-input{display:none;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tree-node{animation:fadeIn .15s ease both;}
+
+/* auto-detected badge on Table tab */
+.auto-badge{display:inline-block;background:var(--green);color:#000;font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px;margin-left:5px;vertical-align:middle;letter-spacing:.3px;}
+
+@media(max-width:700px){
+  .workspace{grid-template-columns:1fr;grid-template-rows:50vh 50vh;height:auto;}
+  .panel{border-right:none;border-bottom:1px solid var(--border);}
+  .theme-label{display:none;}
+  nav .tab-btn{padding:7px 9px;font-size:12px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">{}</div>
+    <div class="logo-text">JSON<span> Lens</span></div>
+  </div>
+
+  <nav>
+    <button class="tab-btn active" id="tab-viewer"    onclick="switchTab('viewer')">Viewer</button>
+    <button class="tab-btn"        id="tab-formatter" onclick="switchTab('formatter')">Formatter</button>
+    <button class="tab-btn"        id="tab-table"     onclick="switchTab('table')" style="display:none">
+      ⊞ Table <span class="auto-badge" id="table-badge" style="display:none">AUTO</span>
+    </button>
+  </nav>
+
+  <div class="header-right">
+    <div class="theme-switcher">
+      <span class="theme-label">Theme</span>
+      <span class="swatch active" data-t="dark"      data-label="Dark"      onclick="setTheme('dark')"></span>
+      <span class="swatch"        data-t="light"     data-label="Light"     onclick="setTheme('light')"></span>
+      <span class="swatch"        data-t="midnight"  data-label="Midnight"  onclick="setTheme('midnight')"></span>
+      <span class="swatch"        data-t="forest"    data-label="Forest"    onclick="setTheme('forest')"></span>
+      <span class="swatch"        data-t="solarized" data-label="Solarized" onclick="setTheme('solarized')"></span>
+    </div>
+    <button class="btn" onclick="loadExample()">Example</button>
+    <button class="btn primary" onclick="processJSON()">Parse →</button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- ══ LEFT: Input ══ -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Input</span>
+      <div class="panel-actions">
+        <button class="btn" onclick="document.getElementById('file-input').click()">📂 Load File</button>
+        <button class="btn danger" onclick="clearInput()">Clear</button>
+        <input type="file" id="file-input" accept=".json,.txt" onchange="loadFile(event)">
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="json-input" spellcheck="false" placeholder='Paste your JSON here…
+
+If it is an array of objects, Table View
+will be shown automatically:
+[
+  { "name": "Alice", "age": 30 },
+  { "name": "Bob",   "age": 25 }
+]
+
+Ctrl+Enter to parse'></textarea>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT: Viewer ══ -->
+  <div class="panel viewer-panel">
+
+    <div class="panel-header">
+      <span class="panel-title" id="viewer-title">Tree View</span>
+      <div class="panel-actions" id="tree-actions">
+        <button class="btn" onclick="expandAll()">Expand All</button>
+        <button class="btn" onclick="collapseAll()">Collapse All</button>
+        <button class="btn" onclick="copyFormatted()">Copy</button>
+      </div>
+      <!-- Table actions: column manager dropdown -->
+      <div class="panel-actions" id="table-actions" style="display:none">
+        <span id="table-row-count" style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;"></span>
+        <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+        <div class="col-manager" id="col-manager">
+          <button class="btn col-manager-btn" onclick="toggleColDropdown(event)">
+            ⊞ Columns <span id="col-count-badge" style="color:var(--accent)"></span>
+          </button>
+          <div class="col-dropdown" id="col-dropdown">
+            <div class="col-dropdown-header">
+              <span>Field Visibility</span>
+              <span>
+                <a onclick="showAllCols()">All</a> &nbsp;·&nbsp;
+                <a onclick="hideAllCols()">None</a>
+              </span>
+            </div>
+            <div id="col-dropdown-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search bar (viewer/formatter) -->
+    <div class="viewer-controls" id="viewer-controls" style="display:none">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search by key name…" oninput="handleSearch(this.value)">
+        <span class="search-clear" id="search-clear" onclick="clearSearch()">✕</span>
+      </div>
+    </div>
+
+    <!-- ① Tree / formatted -->
+    <div id="tree-container">
+      <div class="empty-state">
+        <div class="empty-icon">{ }</div>
+        <p>Paste JSON and click <strong>Parse →</strong><br>Arrays of objects will open automatically in Table View</p>
+      </div>
+    </div>
+
+    <!-- ② Search results -->
+    <div id="search-results">
+      <div class="result-meta">
+        <span id="result-count"></span>
+        <span style="cursor:pointer;color:var(--accent);font-size:11px;" onclick="clearSearch()">← Back</span>
+      </div>
+      <div id="search-results-inner"></div>
+    </div>
+
+    <!-- ③ Table -->
+    <div id="table-panel">
+      <div class="table-wrap">
+        <table id="data-table">
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="table-footer-info"></span>
+        <span id="table-sort-info" style="color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ════════ THEME ════════ */
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('jv-theme',t);
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('active',s.dataset.t===t));
+}
+(function(){
+  const s=localStorage.getItem('jv-theme')||'dark';
+  document.documentElement.setAttribute('data-theme',s);
+  document.addEventListener('DOMContentLoaded',()=>
+    document.querySelectorAll('.swatch').forEach(sw=>sw.classList.toggle('active',sw.dataset.t===s)));
+})();
+
+/* close column dropdown when clicking outside */
+document.addEventListener('click', e => {
+  const dd = document.getElementById('col-dropdown');
+  const btn = document.querySelector('.col-manager');
+  if (!btn?.contains(e.target)) dd?.classList.remove('open');
+});
+
+/* ════════ STATE ════════ */
+let parsedData  = null;
+let currentTab  = 'viewer';
+let tableFields = [];
+let hiddenCols  = new Set();
+let sortCol     = null, sortDir = 1;
+
+/* ════════ TAB SWITCHING ════════ */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const titles = {viewer:'Tree View', formatter:'Formatted JSON', table:'Table View'};
+  document.getElementById('viewer-title').textContent = titles[tab];
+  document.getElementById('tree-actions').style.display  = tab!=='table' ? '' : 'none';
+  document.getElementById('table-actions').style.display = tab==='table' ? '' : 'none';
+  document.getElementById('viewer-controls').style.display = (tab!=='table'&&parsedData!==null) ? '' : 'none';
+  if (parsedData!==null){ clearSearchSilent(); renderOutput(); }
+}
+
+/* ════════ KEYBOARD ════════ */
+document.getElementById('json-input').addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter') processJSON();
+});
+let parseTimer;
+document.getElementById('json-input').addEventListener('input',()=>{
+  clearTimeout(parseTimer);
+  parseTimer=setTimeout(()=>{
+    const v=document.getElementById('json-input').value.trim();
+    if(v) processJSON(); else{resetViewer();setStatus('','Ready');}
+  },600);
+});
+
+/* ════════ STATUS ════════ */
+function setStatus(type,msg){
+  document.getElementById('status-dot').className='status-dot'+(type?' '+type:'');
+  document.getElementById('status-text').textContent=msg;
+}
+
+/* ════════ PARSE ════════ */
+function processJSON(){
+  const raw=document.getElementById('json-input').value.trim();
+  if(!raw){resetViewer();setStatus('','Ready');return;}
+  try{
+    parsedData=JSON.parse(raw);
+    setStatus('ok','Valid JSON · '+getStats(parsedData));
+
+    // detect array-of-objects → auto switch to table
+    const isAOO = isArrayOfObjects(parsedData);
+    const tableTab = document.getElementById('tab-table');
+    const badge    = document.getElementById('table-badge');
+
+    tableTab.style.display = isAOO ? '' : 'none';
+    badge.style.display    = isAOO ? '' : 'none';
+
+    if(isAOO){
+      // reset sort & hidden cols on fresh parse
+      sortCol=null; sortDir=1; hiddenCols=new Set();
+      tableFields=collectFields(parsedData);
+      switchTab('table');
+    } else {
+      if(currentTab==='table') switchTab('viewer');
+      document.getElementById('viewer-controls').style.display='';
+      clearSearchSilent();
+      renderOutput();
+    }
+  }catch(e){
+    parsedData=null;
+    setStatus('err',e.message);
+    showError(e.message);
+    document.getElementById('viewer-controls').style.display='none';
+    document.getElementById('tab-table').style.display='none';
+  }
+}
+
+function isArrayOfObjects(d){
+  return Array.isArray(d) && d.length>0 && d.some(r=>r!==null&&typeof r==='object'&&!Array.isArray(r));
+}
+
+function collectFields(data){
+  const set=new Set();
+  data.forEach(row=>{if(row&&typeof row==='object'&&!Array.isArray(row)) Object.keys(row).forEach(k=>set.add(k));});
+  return [...set];
+}
+
+function renderOutput(){
+  hideAllPanels();
+  if(currentTab==='viewer')    renderTree(parsedData);
+  else if(currentTab==='formatter') renderFormatted(parsedData);
+  else                              renderTable(parsedData);
+}
+
+function getStats(d){
+  if(d===null)return'null';
+  if(Array.isArray(d))return`array · ${d.length} item${d.length!==1?'s':''}`;
+  if(typeof d==='object'){const n=Object.keys(d).length;return`object · ${n} key${n!==1?'s':''}`;}
+  return typeof d;
+}
+
+function resetViewer(){
+  parsedData=null; clearSearchSilent();
+  document.getElementById('viewer-controls').style.display='none';
+  document.getElementById('tab-table').style.display='none';
+  hideAllPanels();
+  document.getElementById('tree-container').style.display='';
+  document.getElementById('tree-container').innerHTML=`
+    <div class="empty-state"><div class="empty-icon">{ }</div>
+    <p>Paste JSON and click <strong>Parse →</strong><br>Arrays of objects will open automatically in Table View</p></div>`;
+}
+
+function showError(msg){
+  hideAllPanels();
+  document.getElementById('tree-container').style.display='';
+  document.getElementById('tree-container').innerHTML=`
+    <div class="error-msg"><div class="error-title">⚠ Parse Error</div><div>${escapeHtml(msg)}</div></div>`;
+}
+
+function hideAllPanels(){
+  document.getElementById('tree-container').style.display='none';
+  document.getElementById('search-results').style.display='none';
+  document.getElementById('table-panel').style.display='none';
+}
+
+/* ════════ TREE ════════ */
+function renderTree(data){
+  document.getElementById('tree-container').style.display='';
+  const c=document.getElementById('tree-container');c.innerHTML='';
+  c.appendChild(buildNode(data,null,true));
+}
+function buildNode(value,key,isLast){
+  const wrap=document.createElement('div');wrap.className='tree-node';
+  const type=getType(value),isComplex=type==='object'||type==='array';
+  const row=document.createElement('div');row.className='node-row';
+  if(isComplex){
+    const tog=document.createElement('span');tog.className='toggle-btn';tog.textContent='▼';
+    tog.onclick=()=>{const ch=wrap.querySelector(':scope > .children');tog.classList.toggle('collapsed',ch.classList.toggle('hidden'));};
+    row.appendChild(tog);
+  } else {const sp=document.createElement('span');sp.className='spacer';row.appendChild(sp);}
+  if(key!==null){
+    const k=document.createElement('span');k.className='key';k.textContent=JSON.stringify(key);row.appendChild(k);
+    const c2=document.createElement('span');c2.className='colon';c2.textContent=':';row.appendChild(c2);
+  }
+  if(isComplex){
+    const isArr=Array.isArray(value);
+    const open=document.createElement('span');open.className='bracket';open.textContent=isArr?'[':'{';row.appendChild(open);
+    const cnt=document.createElement('span');cnt.className='count';
+    const len=isArr?value.length:Object.keys(value).length;
+    cnt.textContent=isArr?`${len} items`:`${len} keys`;row.appendChild(cnt);
+    wrap.appendChild(row);
+    const ch=document.createElement('div');ch.className='children';
+    const entries=isArr?value.map((v,i)=>[i,v]):Object.entries(value);
+    entries.forEach(([k,v],idx)=>ch.appendChild(buildNode(v,isArr?null:k,idx===entries.length-1)));
+    wrap.appendChild(ch);
+    const cr=document.createElement('div');cr.className='node-row';
+    const csp=document.createElement('span');csp.className='spacer';cr.appendChild(csp);
+    const cl=document.createElement('span');cl.className='bracket';
+    cl.textContent=(isArr?']':'}'+(isLast?'':','));cr.appendChild(cl);wrap.appendChild(cr);
+  } else {
+    const val=document.createElement('span');
+    val.className=type==='string'?'string':type==='number'?'number':type==='boolean'?'boolean':'null-val';
+    val.textContent=type==='null'?'null':(type==='string'?JSON.stringify(value):String(value));
+    if(!isLast)val.textContent+=',';
+    row.appendChild(val);wrap.appendChild(row);
+  }
+  return wrap;
+}
+function getType(v){if(v===null)return'null';if(Array.isArray(v))return'array';return typeof v;}
+
+/* ════════ FORMATTER ════════ */
+function renderFormatted(data){
+  document.getElementById('tree-container').style.display='';
+  document.getElementById('tree-container').innerHTML=
+    `<pre style="white-space:pre-wrap;word-break:break-all;">${syntaxHighlight(JSON.stringify(data,null,2))}</pre>`;
+}
+function syntaxHighlight(json){
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,m=>{
+    let cls='number';
+    if(/^"/.test(m))cls=/:$/.test(m)?'key':'string';
+    else if(/true|false/.test(m))cls='boolean';
+    else if(/null/.test(m))cls='null-val';
+    return`<span class="${cls}">${escapeHtml(m)}</span>`;
+  });
+}
+
+/* ════════ TABLE VIEW ════════ */
+function renderTable(data){
+  document.getElementById('table-panel').style.display='flex';
+
+  // sort rows
+  let rows=[...data].filter(r=>r!==null&&typeof r==='object');
+  if(sortCol!==null){
+    rows.sort((a,b)=>{
+      const av=a[sortCol]??'', bv=b[sortCol]??'';
+      if(av<bv)return -sortDir; if(av>bv)return sortDir; return 0;
+    });
+  }
+
+  const visibleCols = tableFields.filter(f=>!hiddenCols.has(f));
+
+  /* ── HEAD ── */
+  const head=document.getElementById('table-head');
+  head.innerHTML='';
+  const tr=document.createElement('tr');
+
+  // row number header
+  const thN=document.createElement('th');
+  thN.innerHTML=`<div class="th-inner"><span class="th-label" style="cursor:default;color:var(--text-muted)">#</span></div>`;
+  tr.appendChild(thN);
+
+  tableFields.forEach(col=>{
+    const th=document.createElement('th');
+    if(hiddenCols.has(col)){th.classList.add('hidden-col');tr.appendChild(th);return;}
+    const isSort=sortCol===col;
+    const icon=isSort?(sortDir===1?'↑':'↓'):'↕';
+    th.classList.toggle('sort-asc', isSort&&sortDir===1);
+    th.classList.toggle('sort-desc',isSort&&sortDir===-1);
+    th.innerHTML=`
+      <div class="th-inner">
+        <span class="th-label" onclick="sortByCol('${col.replace(/'/g,"\\'")}')">
+          ${escapeHtml(col)} <span class="sort-icon">${icon}</span>
+        </span>
+        <span class="th-hide" title="Hide column" onclick="hideCol('${col.replace(/'/g,"\\'")}')">✕</span>
+      </div>`;
+    tr.appendChild(th);
+  });
+  head.appendChild(tr);
+
+  /* ── BODY ── */
+  const body=document.getElementById('table-body');
+  body.innerHTML='';
+  rows.forEach((row,i)=>{
+    const tr2=document.createElement('tr');
+    const tdN=document.createElement('td');tdN.className='col-rownum';tdN.textContent=i+1;tr2.appendChild(tdN);
+    tableFields.forEach(col=>{
+      const td=document.createElement('td');
+      if(hiddenCols.has(col)){td.classList.add('hidden-col');tr2.appendChild(td);return;}
+      const val=row[col];
+      const type=getType(val);
+      if(val===undefined){td.textContent='—';td.className='td-null';}
+      else if(type==='null'){td.textContent='null';td.className='td-null';}
+      else if(type==='object'||type==='array'){
+        td.textContent=type==='array'?`[${val.length} items]`:'{…}';
+        td.className='td-object'; td.title=JSON.stringify(val,null,2);
+      } else if(type==='boolean'){td.textContent=String(val);td.className='td-boolean';}
+      else if(type==='number'){td.textContent=String(val);td.className='td-number';}
+      else{td.textContent=String(val);td.className='td-string';}
+      if(!td.title)td.title=td.textContent;
+      tr2.appendChild(td);
+    });
+    body.appendChild(tr2);
+  });
+
+  /* ── footer & badge ── */
+  const vis=visibleCols.length, total=tableFields.length;
+  document.getElementById('table-footer-info').textContent=
+    `${rows.length} row${rows.length!==1?'s':''} · ${vis} of ${total} column${total!==1?'s':''} visible`;
+  document.getElementById('table-sort-info').textContent=
+    sortCol ? `Sorted by "${sortCol}" ${sortDir===1?'↑':'↓'}` : '';
+  document.getElementById('table-row-count').textContent=`${rows.length} rows`;
+  document.getElementById('col-count-badge').textContent=
+    hiddenCols.size>0 ? `${vis}/${total}` : `${total}`;
+
+  buildColDropdown();
+}
+
+/* ── column manager ── */
+function buildColDropdown(){
+  const list=document.getElementById('col-dropdown-list');
+  list.innerHTML='';
+  tableFields.forEach(col=>{
+    const hidden=hiddenCols.has(col);
+    const item=document.createElement('div');
+    item.className='col-item'+(hidden?' hidden-item':'');
+    item.innerHTML=`
+      <input type="checkbox" ${hidden?'':'checked'} onchange="toggleColFromDropdown('${col.replace(/'/g,"\\'")}',this.checked)">
+      <span class="col-vis-dot"></span>
+      <span title="${escapeHtml(col)}">${escapeHtml(col)}</span>`;
+    list.appendChild(item);
+  });
+}
+
+function toggleColDropdown(e){
+  e.stopPropagation();
+  document.getElementById('col-dropdown').classList.toggle('open');
+}
+
+function hideCol(col){
+  hiddenCols.add(col);
+  renderTable(parsedData);
+}
+
+function toggleColFromDropdown(col, checked){
+  if(checked) hiddenCols.delete(col);
+  else{
+    // always keep at least 1 visible
+    if(tableFields.filter(f=>!hiddenCols.has(f)).length<=1) return;
+    hiddenCols.add(col);
+  }
+  renderTable(parsedData);
+}
+
+function showAllCols(){ hiddenCols=new Set(); renderTable(parsedData); }
+function hideAllCols(){
+  // keep first field visible
+  hiddenCols=new Set(tableFields.slice(1));
+  renderTable(parsedData);
+}
+
+function sortByCol(col){
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+  renderTable(parsedData);
+}
+
+/* ════════ CSV EXPORT ════════ */
+function exportCSV(){
+  if(!parsedData||!Array.isArray(parsedData))return;
+  const cols=tableFields.filter(f=>!hiddenCols.has(f));
+  const lines=[cols.map(c=>`"${c.replace(/"/g,'""')}"`).join(',')];
+  parsedData.forEach(row=>{
+    lines.push(cols.map(c=>{
+      const v=row[c];
+      if(v===null||v===undefined)return'';
+      if(typeof v==='object')return`"${JSON.stringify(v).replace(/"/g,'""')}"`;
+      const s=String(v);
+      return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}\"`:s;
+    }).join(','));
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='data.csv';a.click();
+}
+
+/* ════════ SEARCH ════════ */
+function handleSearch(query){
+  document.getElementById('search-clear').style.display=query?'block':'none';
+  if(!query.trim()){clearSearchSilent();renderOutput();return;}
+  doSearch(query.trim());
+}
+function clearSearch(){
+  document.getElementById('search-input').value='';
+  document.getElementById('search-clear').style.display='none';
+  clearSearchSilent();
+  if(parsedData!==null)renderOutput();
+}
+function clearSearchSilent(){
+  document.getElementById('tree-container').style.display='';
+  document.getElementById('search-results').style.display='none';
+}
+function doSearch(query){
+  if(!parsedData)return;
+  const results=[];
+  collectMatches(parsedData,[],query.toLowerCase(),results);
+  hideAllPanels();
+  document.getElementById('search-results').style.display='flex';
+  renderResults(results,query);
+}
+function collectMatches(node,path,query,results){
+  if(node===null||typeof node!=='object')return;
+  const isArr=Array.isArray(node);
+  const entries=isArr?node.map((v,i)=>[String(i),v]):Object.entries(node);
+  for(const [k,v] of entries){
+    const np=[...path,k];
+    if(k.toLowerCase().includes(query))results.push({path:np,key:k,value:v});
+    if(v!==null&&typeof v==='object')collectMatches(v,np,query,results);
+  }
+}
+function renderResults(results,query){
+  const countEl=document.getElementById('result-count');
+  const inner=document.getElementById('search-results-inner');
+  inner.innerHTML='';
+  if(results.length===0){
+    countEl.textContent='';
+    inner.innerHTML=`<div class="no-results"><div class="no-results-icon">🔍</div><p>No keys matching <strong>"${escapeHtml(query)}"</strong> found.</p></div>`;
+    return;
+  }
+  countEl.textContent=`${results.length} result${results.length!==1?'s':''} for "${escapeHtml(query)}"`;
+  results.forEach(({path,key,value})=>{
+    const card=document.createElement('div');card.className='result-card';
+    const header=document.createElement('div');header.className='result-card-header';
+    path.forEach((seg,i)=>{
+      if(i>0){const sep=document.createElement('span');sep.className='path-sep';sep.textContent='›';header.appendChild(sep);}
+      const s=document.createElement('span');s.className=(i===path.length-1)?'path-match':'path-seg';s.textContent=seg;header.appendChild(s);
+    });
+    card.appendChild(header);
+    const body=document.createElement('div');body.className='result-card-body';
+    const type=getType(value);
+    if(type==='object'||type==='array'){body.appendChild(buildNode(value,key,true));}
+    else{
+      const ke=document.createElement('span');ke.className='result-key';ke.textContent=JSON.stringify(key);
+      const co=document.createElement('span');co.className='result-colon';co.textContent=':';
+      const ve=document.createElement('span');ve.className=type==='string'?'string':type==='number'?'number':type==='boolean'?'boolean':'null-val';
+      ve.textContent=type==='null'?'null':(type==='string'?JSON.stringify(value):String(value));
+      body.appendChild(ke);body.appendChild(co);body.appendChild(ve);
+    }
+    card.appendChild(body);inner.appendChild(card);
+  });
+}
+
+/* ════════ CONTROLS ════════ */
+function expandAll(){
+  document.querySelectorAll('#tree-container .children').forEach(c=>c.classList.remove('hidden'));
+  document.querySelectorAll('#tree-container .toggle-btn').forEach(b=>b.classList.remove('collapsed'));
+}
+function collapseAll(){
+  document.querySelectorAll('#tree-container .children').forEach((c,i)=>{if(i>0)c.classList.add('hidden');});
+  document.querySelectorAll('#tree-container .toggle-btn').forEach((b,i)=>{if(i>0)b.classList.add('collapsed');});
+}
+function copyFormatted(){
+  if(!parsedData)return;
+  const btn=event.target;
+  navigator.clipboard.writeText(JSON.stringify(parsedData,null,2))
+    .then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);});
+}
+function clearInput(){
+  document.getElementById('json-input').value='';
+  document.getElementById('search-input').value='';
+  resetViewer();setStatus('','Ready');
+}
+function loadExample(){
+  document.getElementById('json-input').value=JSON.stringify([
+    {"id":1,"name":"Alice Johnson","age":30,"role":"Engineer","city":"New York","active":true,"score":97.4},
+    {"id":2,"name":"Bob Smith","age":25,"role":"Designer","city":"Los Angeles","active":true,"score":88.1},
+    {"id":3,"name":"Carol White","age":35,"role":"Manager","city":"Chicago","active":false,"score":91.7},
+    {"id":4,"name":"David Lee","age":28,"role":"Engineer","city":"San Francisco","active":true,"score":95.2},
+    {"id":5,"name":"Eva Martinez","age":32,"role":"Analyst","city":"Austin","active":true,"score":84.6},
+    {"id":6,"name":"Frank Brown","age":45,"role":"Director","city":"Seattle","active":false,"score":78.9}
+  ],null,2);
+  processJSON();
+}
+function loadFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{document.getElementById('json-input').value=ev.target.result;processJSON();};
+  r.readAsText(file);e.target.value='';
+}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
