@@ -374,11 +374,53 @@ td.col-rownum{color:var(--text-muted);font-size:11px;width:1%;white-space:nowrap
 .diff-line.section-header{background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 16px;margin:4px 0;}
 .diff-line.section-header .diff-line-content{color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
 
+/* ══════════════════════ TEMPLATE VIEW ══════════════════════ */
+#template-workspace{display:none;flex:1;overflow:hidden;flex-direction:column;background:var(--bg);}
+#template-workspace.active{display:flex;}
+
+.tmpl-layout{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;min-height:0;}
+.tmpl-pane{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+.tmpl-pane:last-child{border-right:none;}
+.tmpl-pane-header{padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+.tmpl-pane-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);}
+
+/* JSON input pane */
+.tmpl-json-area{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+#tmpl-json-input{flex:1;width:100%;padding:14px;background:var(--bg);color:var(--text);border:none;outline:none;resize:none;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;transition:background .25s,color .25s;}
+#tmpl-json-input::placeholder{color:var(--text-muted);}
+.tmpl-fields-bar{padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;min-height:42px;}
+.tmpl-fields-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+.field-chip{padding:3px 10px;border-radius:20px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.field-chip:hover{background:rgba(56,189,248,.2);border-color:var(--accent);}
+
+/* Template editor pane */
+.tmpl-editor-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+#tmpl-editor{flex:1;width:100%;padding:14px;background:var(--bg);color:var(--text);border:none;outline:none;resize:none;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;transition:background .25s,color .25s;}
+#tmpl-editor::placeholder{color:var(--text-muted);}
+
+/* output section */
+.tmpl-output{display:flex;flex-direction:column;border-top:1px solid var(--border);flex-shrink:0;max-height:45vh;overflow:hidden;}
+.tmpl-output-header{padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.tmpl-output-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);flex:1;}
+.tmpl-nav{display:flex;align-items:center;gap:6px;}
+.tmpl-nav-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);color:var(--text-dim);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.tmpl-nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tmpl-nav-btn:disabled{opacity:.3;cursor:default;}
+.tmpl-counter{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);min-width:50px;text-align:center;}
+.tmpl-output-body{flex:1;overflow:auto;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-word;color:var(--text);}
+.tmpl-empty{color:var(--text-muted);font-style:italic;font-size:13px;}
+.tmpl-highlight{background:rgba(56,189,248,.15);color:var(--accent);border-radius:3px;padding:0 2px;}
+.tmpl-status{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);}
+
+@media(max-width:700px){
+  .tmpl-layout{grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
+  .tmpl-pane{border-right:none;border-bottom:1px solid var(--border);}
+}
+
 @media(max-width:700px){
   .diff-inputs{grid-template-columns:1fr;grid-template-rows:1fr 1fr;height:50vh;}
   .diff-input-pane{border-right:none;border-bottom:1px solid var(--border);}
 }
-
 </style>
 </head>
 <body>
@@ -392,10 +434,11 @@ td.col-rownum{color:var(--text-muted);font-size:11px;width:1%;white-space:nowrap
   <nav>
     <button class="tab-btn active" id="tab-viewer"    onclick="switchTab('viewer')">Viewer</button>
     <button class="tab-btn"        id="tab-formatter" onclick="switchTab('formatter')">Formatter</button>
-    <button class="tab-btn"        id="tab-table"     onclick="switchTab('table')" style="display:none">
+    <button class="tab-btn"        id="tab-table"     onclick="switchTab('table')">
       ⊞ Table <span class="auto-badge" id="table-badge" style="display:none">AUTO</span>
     </button>
     <button class="tab-btn"        id="tab-diff"      onclick="switchToDiff()">⇄ Diff</button>
+    <button class="tab-btn"        id="tab-template"  onclick="switchToTemplate()">✉ Template</button>
   </nav>
 
   <div class="header-right">
@@ -597,12 +640,88 @@ Ctrl+Enter to parse'></textarea>
 
 </div>
 
+<!-- ══ TEMPLATE WORKSPACE ══ -->
+<div id="template-workspace">
+
+  <div class="tmpl-layout">
+
+    <!-- LEFT: JSON data input -->
+    <div class="tmpl-pane">
+      <div class="tmpl-pane-header">
+        <span class="tmpl-pane-title">JSON Data</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" onclick="loadTmplExample()">Example</button>
+          <button class="btn danger" onclick="document.getElementById('tmpl-json-input').value='';parseTmplJSON()">Clear</button>
+        </div>
+      </div>
+      <div class="tmpl-json-area">
+        <textarea id="tmpl-json-input" spellcheck="false"
+          placeholder='Paste an array of objects here, e.g.:
+[
+  { "name": "Alice", "email": "alice@example.com" },
+  { "name": "Bob",   "email": "bob@example.com" }
+]' oninput="parseTmplJSON()"></textarea>
+      </div>
+      <div class="tmpl-fields-bar" id="tmpl-fields-bar">
+        <span class="tmpl-fields-label">Fields →</span>
+        <span id="tmpl-fields-empty" style="font-size:11px;color:var(--text-muted);font-style:italic;">parse JSON to see fields</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Template editor -->
+    <div class="tmpl-pane">
+      <div class="tmpl-pane-header">
+        <span class="tmpl-pane-title">Email Template</span>
+        <button class="btn danger" onclick="document.getElementById('tmpl-editor').value='';renderTmpl()">Clear</button>
+      </div>
+      <div class="tmpl-editor-wrap">
+        <textarea id="tmpl-editor" spellcheck="false"
+          placeholder="Write your email template here.
+Click a field chip on the left to insert it as a placeholder.
+
+Example:
+Subject: Welcome, {{name}}!
+
+Hi {{name}},
+
+We're excited to have you on board.
+Your account email is {{email}}.
+
+Regards,
+The Team" oninput="renderTmpl()"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="tmpl-output" id="tmpl-output-section">
+    <div class="tmpl-output-header">
+      <span class="tmpl-output-title">Generated Messages — <span id="tmpl-total-label" style="color:var(--accent)">0 messages</span></span>
+      <div class="tmpl-nav">
+        <button class="tmpl-nav-btn" id="tmpl-prev" onclick="tmplNav(-1)" disabled>‹</button>
+        <span class="tmpl-counter" id="tmpl-counter">—</span>
+        <button class="tmpl-nav-btn" id="tmpl-next" onclick="tmplNav(1)" disabled>›</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-left:10px;">
+        <button class="btn" id="tmpl-copy-btn" onclick="tmplCopyCurrent()">Copy</button>
+        <button class="btn primary" onclick="tmplDownload()">⬇ Download .txt</button>
+      </div>
+    </div>
+    <div class="tmpl-output-body" id="tmpl-output-body">
+      <span class="tmpl-empty">Generated messages will appear here…</span>
+    </div>
+  </div>
+
+</div>
+
 <script>
 /* ════════ DIFF ENGINE ════════ */
 function switchToDiff(){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-diff').classList.add('active');
   document.getElementById('workspace').style.display='none';
+  document.getElementById('template-workspace').classList.remove('active');
   document.getElementById('diff-workspace').classList.add('active');
   currentTab='diff';
 }
@@ -731,7 +850,167 @@ function loadDiffExample(){
   runDiff();
 }
 
-/* ════════ THEME ════════ */
+/* ════════ TEMPLATE ENGINE ════════ */
+let tmplData       = [];
+let tmplFields     = [];
+let tmplMessages   = [];
+let tmplCurrent    = 0;
+
+function switchToTemplate(){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-template').classList.add('active');
+  document.getElementById('workspace').style.display='none';
+  document.getElementById('diff-workspace').classList.remove('active');
+  document.getElementById('template-workspace').classList.add('active');
+  currentTab='template';
+}
+
+/* collect flat dot-notation keys from a row */
+function collectTmplFields(data){
+  const set=new Set();
+  const rows=Array.isArray(data)?data:[data];
+  rows.forEach(row=>{
+    if(row&&typeof row==='object') Object.keys(flattenObject(row)).forEach(k=>set.add(k));
+  });
+  return [...set];
+}
+
+function parseTmplJSON(){
+  const raw=document.getElementById('tmpl-json-input').value.trim();
+  const bar=document.getElementById('tmpl-fields-bar');
+  const empty=document.getElementById('tmpl-fields-empty');
+
+  // remove old chips
+  bar.querySelectorAll('.field-chip').forEach(c=>c.remove());
+
+  if(!raw){ tmplData=[]; tmplFields=[]; empty.style.display=''; renderTmpl(); return; }
+
+  let parsed;
+  try{ parsed=JSON.parse(raw); }
+  catch(e){ empty.textContent='⚠ Invalid JSON'; empty.style.display=''; tmplData=[]; renderTmpl(); return; }
+
+  tmplData=Array.isArray(parsed)?parsed:[parsed];
+  tmplFields=collectTmplFields(tmplData);
+
+  empty.style.display='none';
+  tmplFields.forEach(f=>{
+    const chip=document.createElement('span');
+    chip.className='field-chip';
+    chip.textContent='{{'+f+'}}';
+    chip.title='Click to insert into template';
+    chip.onclick=()=>insertPlaceholder(f);
+    bar.appendChild(chip);
+  });
+  renderTmpl();
+}
+
+function insertPlaceholder(field){
+  const ta=document.getElementById('tmpl-editor');
+  const start=ta.selectionStart, end=ta.selectionEnd;
+  const val=ta.value;
+  const placeholder='{{'+field+'}}';
+  ta.value=val.substring(0,start)+placeholder+val.substring(end);
+  ta.selectionStart=ta.selectionEnd=start+placeholder.length;
+  ta.focus();
+  renderTmpl();
+}
+
+function renderTmpl(){
+  const template=document.getElementById('tmpl-editor').value;
+  const body=document.getElementById('tmpl-output-body');
+  const label=document.getElementById('tmpl-total-label');
+  const counter=document.getElementById('tmpl-counter');
+  const prevBtn=document.getElementById('tmpl-prev');
+  const nextBtn=document.getElementById('tmpl-next');
+
+  if(!template.trim()||tmplData.length===0){
+    tmplMessages=[];
+    body.innerHTML='<span class="tmpl-empty">Generated messages will appear here…</span>';
+    label.textContent='0 messages';
+    counter.textContent='—';
+    prevBtn.disabled=true; nextBtn.disabled=true;
+    return;
+  }
+
+  // generate all messages
+  tmplMessages=tmplData.map(row=>{
+    const flat=flattenObject(typeof row==='object'&&row!==null?row:{value:row});
+    return template.replace(/\{\{([^}]+)\}\}/g,(_,key)=>{
+      const k=key.trim();
+      return k in flat ? String(flat[k]) : '{{'+k+'}}';
+    });
+  });
+
+  tmplCurrent=Math.min(tmplCurrent,tmplMessages.length-1);
+  if(tmplCurrent<0) tmplCurrent=0;
+
+  label.textContent=`${tmplMessages.length} message${tmplMessages.length!==1?'s':''}`;
+  showTmplMessage(tmplCurrent);
+  prevBtn.disabled=tmplCurrent===0;
+  nextBtn.disabled=tmplCurrent===tmplMessages.length-1;
+  counter.textContent=`${tmplCurrent+1} / ${tmplMessages.length}`;
+}
+
+function showTmplMessage(idx){
+  const body=document.getElementById('tmpl-output-body');
+  const counter=document.getElementById('tmpl-counter');
+  const prevBtn=document.getElementById('tmpl-prev');
+  const nextBtn=document.getElementById('tmpl-next');
+  if(!tmplMessages.length) return;
+  // highlight remaining unresolved placeholders
+  const html=escapeHtml(tmplMessages[idx]).replace(/\{\{[^}]+\}\}/g,m=>`<span class="tmpl-highlight">${m}</span>`);
+  body.innerHTML=html;
+  counter.textContent=`${idx+1} / ${tmplMessages.length}`;
+  prevBtn.disabled=idx===0;
+  nextBtn.disabled=idx===tmplMessages.length-1;
+}
+
+function tmplNav(dir){
+  tmplCurrent=Math.max(0,Math.min(tmplMessages.length-1,tmplCurrent+dir));
+  showTmplMessage(tmplCurrent);
+}
+
+function tmplCopyCurrent(){
+  if(!tmplMessages.length) return;
+  const btn=document.getElementById('tmpl-copy-btn');
+  navigator.clipboard.writeText(tmplMessages[tmplCurrent])
+    .then(()=>{ btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',1500); });
+}
+
+function tmplDownload(){
+  if(!tmplMessages.length) return;
+  const separator='\n'+'─'.repeat(60)+'\n\n';
+  const content=tmplMessages.map((m,i)=>`[Message ${i+1} of ${tmplMessages.length}]\n\n${m}`).join(separator);
+  const blob=new Blob([content],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='messages.txt';
+  a.click();
+}
+
+function loadTmplExample(){
+  document.getElementById('tmpl-json-input').value=JSON.stringify([
+    {"name":"Alice Johnson","email":"alice@example.com","role":"Engineer","company":"Acme Corp"},
+    {"name":"Bob Smith","email":"bob@example.com","role":"Designer","company":"Globex"},
+    {"name":"Carol White","email":"carol@example.com","role":"Manager","company":"Initech"}
+  ],null,2);
+  document.getElementById('tmpl-editor').value=`Subject: Welcome to the team, {{name}}!
+
+Hi {{name}},
+
+We're thrilled to have you join us as a {{role}} at {{company}}.
+
+Your registered email is: {{email}}
+
+Please log in to your account and complete your profile at your earliest convenience.
+
+If you have any questions, don't hesitate to reach out.
+
+Best regards,
+The Onboarding Team`;
+  parseTmplJSON();
+}
+
 function setTheme(t){
   document.documentElement.setAttribute('data-theme',t);
   localStorage.setItem('jv-theme',t);
@@ -760,9 +1039,10 @@ let sortCol     = null, sortDir = 1;
 
 /* ════════ TAB SWITCHING ════════ */
 function switchTab(tab) {
-  // restore main workspace if coming from diff
+  // restore main workspace if coming from diff or template
   document.getElementById('workspace').style.display='';
   document.getElementById('diff-workspace').classList.remove('active');
+  document.getElementById('template-workspace').classList.remove('active');
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
@@ -803,11 +1083,8 @@ function processJSON(){
 
     // detect array-of-objects → auto switch to table, but always show table tab
     const isAOO = isArrayOfObjects(parsedData);
-    const tableTab = document.getElementById('tab-table');
-    const badge    = document.getElementById('table-badge');
-
-    tableTab.style.display = '';
-    badge.style.display    = isAOO ? '' : 'none';
+    const badge  = document.getElementById('table-badge');
+    badge.style.display = isAOO ? '' : 'none';
 
     if(isAOO){
       // reset sort & hidden cols on fresh parse
@@ -829,7 +1106,7 @@ function processJSON(){
     setStatus('err',e.message);
     showError(e.message);
     document.getElementById('viewer-controls').style.display='none';
-    document.getElementById('tab-table').style.display='none';
+    document.getElementById('table-badge').style.display='none';
   }
 }
 
@@ -919,7 +1196,7 @@ function getStats(d){
 function resetViewer(){
   parsedData=null; clearSearchSilent();
   document.getElementById('viewer-controls').style.display='none';
-  document.getElementById('tab-table').style.display='none';
+  document.getElementById('table-badge').style.display='none';
   hideAllPanels();
   document.getElementById('tree-container').style.display='';
   document.getElementById('tree-container').innerHTML=`
