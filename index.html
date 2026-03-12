@@ -542,12 +542,12 @@ function processJSON(){
     parsedData=JSON.parse(raw);
     setStatus('ok','Valid JSON · '+getStats(parsedData));
 
-    // detect array-of-objects → auto switch to table
+    // detect array-of-objects → auto switch to table, but always show table tab
     const isAOO = isArrayOfObjects(parsedData);
     const tableTab = document.getElementById('tab-table');
     const badge    = document.getElementById('table-badge');
 
-    tableTab.style.display = isAOO ? '' : 'none';
+    tableTab.style.display = '';
     badge.style.display    = isAOO ? '' : 'none';
 
     if(isAOO){
@@ -556,10 +556,14 @@ function processJSON(){
       tableFields=collectFields(parsedData);
       switchTab('table');
     } else {
-      if(currentTab==='table') switchTab('viewer');
-      document.getElementById('viewer-controls').style.display='';
-      clearSearchSilent();
-      renderOutput();
+      sortCol=null; sortDir=1; hiddenCols=new Set();
+      tableFields=collectFields(parsedData);
+      if(currentTab==='table') renderOutput();
+      else {
+        document.getElementById('viewer-controls').style.display='';
+        clearSearchSilent();
+        renderOutput();
+      }
     }
   }catch(e){
     parsedData=null;
@@ -574,10 +578,69 @@ function isArrayOfObjects(d){
   return Array.isArray(d) && d.length>0 && d.some(r=>r!==null&&typeof r==='object'&&!Array.isArray(r));
 }
 
+function flattenObject(obj, prefix=''){
+  const out={};
+  for(const [k,v] of Object.entries(obj)){
+    const key = prefix ? `${prefix}.${k}` : k;
+    if(v!==null&&typeof v==='object'&&!Array.isArray(v)){
+      Object.assign(out, flattenObject(v, key));
+    } else if(Array.isArray(v)){
+      if(v.length===0){
+        out[key]='[]';
+      } else if(v.every(item=>item!==null&&typeof item==='object'&&!Array.isArray(item))){
+        // array of objects → flatten each with index: phoneNumbers.0.type
+        v.forEach((item,i)=>Object.assign(out, flattenObject(item, `${key}.${i}`)));
+      } else {
+        // array of primitives → join as comma list
+        out[key]=v.join(', ');
+      }
+    } else {
+      out[key] = v;
+    }
+  }
+  return out;
+}
+
 function collectFields(data){
   const set=new Set();
-  data.forEach(row=>{if(row&&typeof row==='object'&&!Array.isArray(row)) Object.keys(row).forEach(k=>set.add(k));});
+  if(Array.isArray(data)){
+    if(isArrayOfObjects(data)){
+      // array of objects → flatten each row and collect all keys
+      data.forEach(row=>{
+        if(row!==null&&typeof row==='object'&&!Array.isArray(row))
+          Object.keys(flattenObject(row)).forEach(k=>set.add(k));
+      });
+    } else {
+      // array of primitives → index as columns
+      data.forEach((_,i)=>set.add(String(i)));
+    }
+  } else if(data!==null&&typeof data==='object'){
+    // plain object → flattened keys as columns
+    Object.keys(flattenObject(data)).forEach(k=>set.add(k));
+  } else {
+    set.add('value');
+  }
   return [...set];
+}
+
+function normalizeToRows(data){
+  if(Array.isArray(data)){
+    if(isArrayOfObjects(data)){
+      // flatten each object row
+      return data.filter(r=>r!==null&&typeof r==='object').map(r=>flattenObject(r));
+    } else {
+      // array of primitives → single row, index as key
+      const row={};
+      data.forEach((v,i)=>row[String(i)]=v);
+      return [row];
+    }
+  } else if(data!==null&&typeof data==='object'){
+    // plain object → single row with flattened keys
+    return [flattenObject(data)];
+  } else {
+    // primitive → single row
+    return [{value: data}];
+  }
 }
 
 function renderOutput(){
@@ -683,8 +746,7 @@ function syntaxHighlight(json){
 function renderTable(data){
   document.getElementById('table-panel').style.display='flex';
 
-  // sort rows
-  let rows=[...data].filter(r=>r!==null&&typeof r==='object');
+  let rows = normalizeToRows(data);
   if(sortCol!==null){
     rows.sort((a,b)=>{
       const av=a[sortCol]??'', bv=b[sortCol]??'';
@@ -699,7 +761,6 @@ function renderTable(data){
   head.innerHTML='';
   const tr=document.createElement('tr');
 
-  // row number header
   const thN=document.createElement('th');
   thN.innerHTML=`<div class="th-inner"><span class="th-label" style="cursor:default;color:var(--text-muted)">#</span></div>`;
   tr.appendChild(thN);
@@ -810,10 +871,11 @@ function sortByCol(col){
 
 /* ════════ CSV EXPORT ════════ */
 function exportCSV(){
-  if(!parsedData||!Array.isArray(parsedData))return;
+  if(!parsedData)return;
   const cols=tableFields.filter(f=>!hiddenCols.has(f));
+  const rows=normalizeToRows(parsedData);
   const lines=[cols.map(c=>`"${c.replace(/"/g,'""')}"`).join(',')];
-  parsedData.forEach(row=>{
+  rows.forEach(row=>{
     lines.push(cols.map(c=>{
       const v=row[c];
       if(v===null||v===undefined)return'';
@@ -913,14 +975,22 @@ function clearInput(){
   resetViewer();setStatus('','Ready');
 }
 function loadExample(){
-  document.getElementById('json-input').value=JSON.stringify([
-    {"id":1,"name":"Alice Johnson","age":30,"role":"Engineer","city":"New York","active":true,"score":97.4},
-    {"id":2,"name":"Bob Smith","age":25,"role":"Designer","city":"Los Angeles","active":true,"score":88.1},
-    {"id":3,"name":"Carol White","age":35,"role":"Manager","city":"Chicago","active":false,"score":91.7},
-    {"id":4,"name":"David Lee","age":28,"role":"Engineer","city":"San Francisco","active":true,"score":95.2},
-    {"id":5,"name":"Eva Martinez","age":32,"role":"Analyst","city":"Austin","active":true,"score":84.6},
-    {"id":6,"name":"Frank Brown","age":45,"role":"Director","city":"Seattle","active":false,"score":78.9}
-  ],null,2);
+  document.getElementById('json-input').value=JSON.stringify({
+    "name": "John Smith",
+    "sku": "20223",
+    "price": 23.95,
+    "shipTo": {
+      "name": "Jane Smith",
+      "address": "123 Maple Street",
+      "city": "Pretendville",
+      "state": "NY",
+      "zip": "12345"
+    },
+    "phoneNumbers": [
+      {"type": "mobile", "number": "123 456-7890"},
+      {"type": "office", "number": "987 654-3210"}
+    ]
+  },null,2);
   processJSON();
 }
 function loadFile(e){
